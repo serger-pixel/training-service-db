@@ -6,6 +6,8 @@
 
         public string DatabaseName { get; set; } = null!;
 
-        public string CollectionName { get; set; } = null!;
+        public string CollectionNameCoach { get; set; } = null!;
+
+        public string CollectionNameTraining { get; set; } = null!;
     }
 }

@@ -11,6 +11,8 @@ namespace API_sprot_training_program.Services
     {
         private readonly IMongoCollection<Training> _programs;
 
+        private readonly IMongoCollection<Coach> _coaches;
+
         private readonly DataBaseRequestTime _data_base_metric;
 
         private const int LIMIT_OF_PROGRAMS = 1000;
@@ -25,7 +27,10 @@ namespace API_sprot_training_program.Services
                 settings.Value.DatabaseName);
 
             _programs = mongoDatabase.GetCollection<Training>(
-                settings.Value.CollectionName);
+                settings.Value.CollectionNameTraining);
+
+            _coaches = mongoDatabase.GetCollection<Coach>(
+                settings.Value.CollectionNameCoach);
 
             Type type = typeof(Training);
 
@@ -106,6 +111,7 @@ namespace API_sprot_training_program.Services
 
         public async Task CreateAsync(TrainingInput program)
         {
+            _
             Stopwatch sw = Stopwatch.StartNew();
             var result = _programs.InsertOneAsync(MapToModel(program));
             await result;

@@ -25,7 +25,7 @@ namespace API_sprot_training_program.Services
                 settings.Value.DatabaseName);
 
             _coaches = mongoDatabase.GetCollection<Coach>(
-                settings.Value.CollectionName);
+                settings.Value.CollectionNameCoach);
 
             Type type = typeof(Coach);
 
