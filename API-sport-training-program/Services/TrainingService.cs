@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Xml.Linq;
 
 namespace API_sprot_training_program.Services
 {
@@ -109,18 +110,28 @@ namespace API_sprot_training_program.Services
             return MapToOutput(element.Result);
         }
 
-        public async Task CreateAsync(TrainingInput program)
+        public async Task<Training?> CreateAsync(TrainingInput program)
         {
-            _
+            var coach = await _coaches.Find(element => element.Id.Equals(program.IdCoach)).FirstOrDefaultAsync();
+            if (coach == null)
+            {
+                return null;
+            }
             Stopwatch sw = Stopwatch.StartNew();
             var result = _programs.InsertOneAsync(MapToModel(program));
             await result;
             sw.Stop();
             _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
+            return MapToModel(program);
         }
 
-        public async Task<ReplaceOneResult> UpdateAsync(String id, TrainingInput program)
+        public async Task<ReplaceOneResult?> UpdateAsync(String id, TrainingInput program)
         {
+            var coach = await _coaches.Find(element => element.Id.Equals(program.IdCoach)).FirstOrDefaultAsync();
+            if (coach == null)
+            {
+                return null;
+            }
             var currentProgram = MapToModel(program);
             currentProgram.Id = id;
             Stopwatch sw = Stopwatch.StartNew();
