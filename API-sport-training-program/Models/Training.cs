@@ -1,4 +1,6 @@
-﻿namespace API_sprot_training_program.Models
+﻿using MongoDB.Bson.Serialization.Attributes;
+
+namespace API_sprot_training_program.Models
 {
     public enum TrainingType
     {
@@ -16,10 +18,15 @@
         Middle,
         High
     }
+
     public class Training
     {
+        [BsonId]
+        [BsonRepresentation(MongoDB.Bson.BsonType.ObjectId)]
         public string Id { get; set; }
+
         public TrainingType Specializaion { get; set; }
+
         public String Title { get; set; }
 
         public Difficulty Level { get; set; }

@@ -1,4 +1,6 @@
-﻿namespace API_sprot_training_program.Models
+﻿using MongoDB.Bson.Serialization.Attributes;
+
+namespace API_sprot_training_program.Models
 {
     public enum Education
     {
@@ -8,6 +10,8 @@
 
     public class Coach
     {
+        [BsonId]
+        [BsonRepresentation(MongoDB.Bson.BsonType.ObjectId)]
         public String Id { get; set; }
         public string Name { get; set; }
         public string MiddleName {  get; set; }
