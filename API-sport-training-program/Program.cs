@@ -22,6 +22,12 @@ builder.Services.AddSingleton<IMongoClient>(sp =>
     return new MongoClient(settings.ConnectionString);
 });
 
+
+builder.Services.AddStackExchangeRedisCache(sp =>
+{
+    sp.Configuration = builder.Configuration.GetConnectionString("Redis");
+});
+
 builder.Services.AddSingleton<IMongoDatabase>(sp =>
 {
     var settings = sp.GetRequiredService<IOptions<DataBaseSettings>>().Value;
@@ -32,7 +38,8 @@ builder.Services.AddSingleton<IMongoDatabase>(sp =>
 
 builder.Services.AddMetrics();
 
-builder.Services.AddSingleton<TrainingProgramService>();
+builder.Services.AddSingleton<TrainingService>();
+builder.Services.AddSingleton<CoachService>();
 
 
 builder.Services.AddOpenTelemetry()

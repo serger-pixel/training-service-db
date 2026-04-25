@@ -1,9 +1,14 @@
 ﻿using API_sprot_training_program.Metrics;
 using API_sprot_training_program.Models;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text.Json;
 using System.Xml.Linq;
 
 namespace API_sprot_training_program.Services
@@ -14,11 +19,13 @@ namespace API_sprot_training_program.Services
 
         private readonly IMongoCollection<Coach> _coaches;
 
+        private readonly IDistributedCache _cache;
+
         private readonly DataBaseRequestTime _data_base_metric;
 
         private const int LIMIT_OF_PROGRAMS = 1000;
 
-        public TrainingService(IOptions<DataBaseSettings> settings, IMeterFactory meterFactory)
+        public TrainingService(IOptions<DataBaseSettings> settings, IMeterFactory meterFactory, IDistributedCache cache)
         {
 
             var mongoClient = new MongoClient(
@@ -36,6 +43,8 @@ namespace API_sprot_training_program.Services
             Type type = typeof(Training);
 
             _data_base_metric = new DataBaseRequestTime(meterFactory);
+
+            _cache = cache;
         }
 
 
@@ -72,15 +81,37 @@ namespace API_sprot_training_program.Services
 
         public async Task<List<TrainingOutput>> GetOrderAsync()
         {
+            string list_key = $"training_ids";
+
+            List<string> cache_ids =  JsonSerializer.Deserialize<List<string>>(_cache.GetString(list_key));
+            List<string> missed_id = new List<string>();
+
+            List<TrainingOutput> cached_trainings = new List<TrainingOutput>();
+
+            foreach(var id in cache_ids){
+                string id_key = $"training_{id}";
+                Training program = JsonSerializer.Deserialize<Training>(_cache.GetString(id_key));
+                if (program == null) { 
+                    missed_id.Add(id_key);
+                }
+                else { 
+                    cached_trainings.Add(MapToOutput(program));
+                }
+            }
+
             Stopwatch sw = Stopwatch.StartNew();
-            var programsList = _programs.Find(_ => true).ToListAsync();
-            await programsList;
+            var db_trainings = _programs.Find(p => missed_id.Contains(p.Id)).ToList<Training>();
             sw.Stop();
             _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
-            return programsList.Result.Select(
+            List<TrainingOutput> result = new List<TrainingOutput>();
+            result.AddRange(cached_trainings);
+            result.AddRange(db_trainings.Select(
                 element => MapToOutput(element)
                 )
-                .ToList();
+                .ToList());
+
+
+            return result;
         }
 
         public async Task<List<TrainingOutput>> GetAllAsync()
@@ -99,15 +130,33 @@ namespace API_sprot_training_program.Services
 
         public async Task<TrainingOutput?> GetByIdAsync(String id)
         {
-            Stopwatch sw = Stopwatch.StartNew();
-            var element = _programs.Find(element => element.Id.Equals(id)).FirstOrDefaultAsync();
-            await element;
-            _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
-            if (element.Result == null)
+            string key = $"training_{id}";
+            var cache_element = await _cache.GetAsync(key);
+
+            if (cache_element == null)
             {
-                return null;
+                Stopwatch sw = Stopwatch.StartNew();
+                var element = _programs.Find(element => element.Id.Equals(id)).FirstOrDefaultAsync();
+                await element;
+                if (element == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    if (element.Result.Specializaion == TrainingType.Cardio ||
+                        element.Result.Specializaion == TrainingType.Power)
+                    {
+                        _cache.SetString(key, JsonSerializer.Serialize(element), new DistributedCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+                        });
+                    }
+                }
+                _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
+                return MapToOutput(element.Result);
             }
-            return MapToOutput(element.Result);
+            return JsonSerializer.Deserialize<TrainingOutput>(cache_element);
         }
 
         public async Task<Training?> CreateAsync(TrainingInput program)
@@ -118,8 +167,20 @@ namespace API_sprot_training_program.Services
                 return null;
             }
             Stopwatch sw = Stopwatch.StartNew();
-            var result = _programs.InsertOneAsync(MapToModel(program));
+            Training new_training = MapToModel(program);
+            var result = _programs.InsertOneAsync(new_training);
             await result;
+
+            string key = "training_ids";
+            var cached_list = _cache.GetString(key);
+            List<string> cached_ids;
+
+            if (cached_list != null)
+            {
+                cached_ids = JsonSerializer.Deserialize<List<string>>(cached_list);
+                cached_ids.Add(new_training.Id);
+                _cache.SetString(key, JsonSerializer.Serialize(cached_ids));
+            }
             sw.Stop();
             _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
             return MapToModel(program);
