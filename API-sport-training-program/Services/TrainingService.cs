@@ -3,6 +3,7 @@ using API_sprot_training_program.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using StackExchange.Redis;
 using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
@@ -81,37 +82,32 @@ namespace API_sprot_training_program.Services
 
         public async Task<List<TrainingOutput>> GetOrderAsync()
         {
-            string list_key = $"training_ids";
+            string list_key = $"training_list";
 
-            List<string> cache_ids =  JsonSerializer.Deserialize<List<string>>(_cache.GetString(list_key));
-            List<string> missed_id = new List<string>();
+            List<Training>  cached_trainings =  JsonSerializer.Deserialize<List<Training>>(_cache.GetString(list_key));
 
-            List<TrainingOutput> cached_trainings = new List<TrainingOutput>();
+            Boolean isTime;
 
-            foreach(var id in cache_ids){
-                string id_key = $"training_{id}";
-                Training program = JsonSerializer.Deserialize<Training>(_cache.GetString(id_key));
-                if (program == null) { 
-                    missed_id.Add(id_key);
-                }
-                else { 
-                    cached_trainings.Add(MapToOutput(program));
-                }
+            if (isTime){
+
+                var db_programs = _programs.Find(_ => true).ToList<Training>();
+                _cache.SetString(list_key, JsonSerializer.Serialize(db_programs));
             }
 
             Stopwatch sw = Stopwatch.StartNew();
-            var db_trainings = _programs.Find(p => missed_id.Contains(p.Id)).ToList<Training>();
             sw.Stop();
             _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
             List<TrainingOutput> result = new List<TrainingOutput>();
-            result.AddRange(cached_trainings);
-            result.AddRange(db_trainings.Select(
+            cached_trainings.Select(
                 element => MapToOutput(element)
                 )
-                .ToList());
+                .ToList();
 
 
-            return result;
+            return cached_trainings.Select(
+                element => MapToOutput(element)
+                )
+                .ToList();
         }
 
         public async Task<List<TrainingOutput>> GetAllAsync()
@@ -231,7 +227,8 @@ namespace API_sprot_training_program.Services
                Title = program.Title,
                Level = program.Level,
                IdCoach = program.IdCoach,
-               Price = program.Price
+               Price = program.Price,
+               Date = program.Date
             };
         }
 
@@ -243,7 +240,8 @@ namespace API_sprot_training_program.Services
                 Title = program.Title,
                 Level = program.Level,
                 IdCoach = program.IdCoach,
-                Price = program.Price
+                Price = program.Price,
+                Date = program.Date
             };
         }
     }

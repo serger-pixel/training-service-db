@@ -28,5 +28,7 @@ namespace API_sprot_training_program.Models
         [Range(typeof(Decimal), Validation.MIN_PRICE, Validation.MAX_PRICE)]
         public Decimal Price { get; set; }
 
+        public System.DateTime Date { get; set; }
+
     }
 }

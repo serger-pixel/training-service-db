@@ -18,5 +18,7 @@ namespace API_sprot_training_program.Models
 
         public Decimal Price { get; set; }
 
+        public System.DateTime Date { get; set; }
+
     }
 }
