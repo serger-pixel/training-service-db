@@ -46,8 +46,20 @@ namespace API_sprot_training_program.Services
             _data_base_metric = new DataBaseRequestTime(meterFactory);
 
             _cache = cache;
+
+            Task.Run(() => UpdateCache(CancellationToken.None));
         }
 
+        private async Task UpdateCache(CancellationToken stoppingToken)
+        {
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromDays(1));
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+            {
+                string list_key = $"training_list";
+                var db_programs = _programs.Find(_ => true).ToList<Training>();
+                _cache.SetString(list_key, JsonSerializer.Serialize(db_programs));
+            }
+        }
 
         public async Task<List<TrainingOutput>> GetByFilter(String nameProperty, String value)
         {
@@ -84,26 +96,7 @@ namespace API_sprot_training_program.Services
         {
             string list_key = $"training_list";
 
-            List<Training>  cached_trainings =  JsonSerializer.Deserialize<List<Training>>(_cache.GetString(list_key));
-
-            Boolean isTime;
-
-            if (isTime){
-
-                var db_programs = _programs.Find(_ => true).ToList<Training>();
-                _cache.SetString(list_key, JsonSerializer.Serialize(db_programs));
-            }
-
-            Stopwatch sw = Stopwatch.StartNew();
-            sw.Stop();
-            _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
-            List<TrainingOutput> result = new List<TrainingOutput>();
-            cached_trainings.Select(
-                element => MapToOutput(element)
-                )
-                .ToList();
-
-
+            List<Training>? cached_trainings = JsonSerializer.Deserialize<List<Training>>(_cache.GetString(list_key));
             return cached_trainings.Select(
                 element => MapToOutput(element)
                 )
@@ -131,26 +124,7 @@ namespace API_sprot_training_program.Services
 
             if (cache_element == null)
             {
-                Stopwatch sw = Stopwatch.StartNew();
-                var element = _programs.Find(element => element.Id.Equals(id)).FirstOrDefaultAsync();
-                await element;
-                if (element == null)
-                {
-                    return null;
-                }
-                else
-                {
-                    if (element.Result.Specializaion == TrainingType.Cardio ||
-                        element.Result.Specializaion == TrainingType.Power)
-                    {
-                        _cache.SetString(key, JsonSerializer.Serialize(element), new DistributedCacheEntryOptions
-                        {
-                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
-                        });
-                    }
-                }
-                _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
-                return MapToOutput(element.Result);
+                return null;
             }
             return JsonSerializer.Deserialize<TrainingOutput>(cache_element);
         }
@@ -163,20 +137,8 @@ namespace API_sprot_training_program.Services
                 return null;
             }
             Stopwatch sw = Stopwatch.StartNew();
-            Training new_training = MapToModel(program);
-            var result = _programs.InsertOneAsync(new_training);
+            var result = _programs.InsertOneAsync(MapToModel(program));
             await result;
-
-            string key = "training_ids";
-            var cached_list = _cache.GetString(key);
-            List<string> cached_ids;
-
-            if (cached_list != null)
-            {
-                cached_ids = JsonSerializer.Deserialize<List<string>>(cached_list);
-                cached_ids.Add(new_training.Id);
-                _cache.SetString(key, JsonSerializer.Serialize(cached_ids));
-            }
             sw.Stop();
             _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
             return MapToModel(program);
