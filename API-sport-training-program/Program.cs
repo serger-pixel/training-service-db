@@ -1,39 +1,37 @@
 using API_sprot_training_program.Models;
 using API_sprot_training_program.Services;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Prometheus;
-using Renci.SshNet.Messages;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.Configure<DataBaseSettings>(
-    builder.Configuration.GetSection("TrainingProgramsDatabase"));
 
-builder.Services.AddSingleton<IMongoClient>(sp =>
+var connection_string_database = Environment.GetEnvironmentVariable("TrainingProgramsDatabase_connectionString");
+builder.Services.AddSingleton<IMongoClient>(new MongoClient(connection_string_database));
+
+builder.Services.AddSingleton<IDataBaseSettings>(
+    new TraningsDataBaseSettings(
+         Environment.GetEnvironmentVariable("Collectoin_coaches") ?? "coaches",
+         Environment.GetEnvironmentVariable(" Collection_trainings") ?? "trainings",
+         Environment.GetEnvironmentVariable("DB_name") ?? "db"
+        )
+    );
+
+var connection_string_redis = Environment.GetEnvironmentVariable("Redis_connectionString");
+builder.Services.AddStackExchangeRedisCache(options =>
 {
-    var settings = sp.GetRequiredService<IOptions<DataBaseSettings>>().Value;
-    return new MongoClient(settings.ConnectionString);
-});
+    options.Configuration = connection_string_redis;
 
-
-builder.Services.AddStackExchangeRedisCache(sp =>
-{
-    sp.Configuration = builder.Configuration.GetConnectionString("Redis");
-});
-
-builder.Services.AddSingleton<IMongoDatabase>(sp =>
-{
-    var settings = sp.GetRequiredService<IOptions<DataBaseSettings>>().Value;
-    var client = sp.GetRequiredService<IMongoClient>();
-
-    return client.GetDatabase(settings.DatabaseName);
+    options.InstanceName = "Api-Sport-Training";
 });
 
 builder.Services.AddMetrics();
