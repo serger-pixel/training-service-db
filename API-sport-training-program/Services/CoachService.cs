@@ -1,5 +1,6 @@
 ﻿using API_sprot_training_program.Metrics;
 using API_sprot_training_program.Models;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using System.Diagnostics;
@@ -15,17 +16,18 @@ namespace API_sprot_training_program.Services
 
         private const int LIMIT_OF_COACHES = 1000;
 
-        public CoachService(IOptions<DataBaseSettings> settings, IMeterFactory meterFactory)
+        public CoachService(IMongoClient mongoClient,
+            IDataBaseSettings settings,
+            IMeterFactory meterFactory,
+            IDistributedCache cache)
         {
 
-            var mongoClient = new MongoClient(
-            settings.Value.ConnectionString);
 
             var mongoDatabase = mongoClient.GetDatabase(
-                settings.Value.DatabaseName);
+                settings.DatabaseName);
 
             _coaches = mongoDatabase.GetCollection<Coach>(
-                settings.Value.CollectionNameCoach);
+                settings.CollectionNameCoach);
 
             Type type = typeof(Coach);
 

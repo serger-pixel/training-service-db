@@ -26,20 +26,21 @@ namespace API_sprot_training_program.Services
 
         private const int LIMIT_OF_PROGRAMS = 1000;
 
-        public TrainingService(IOptions<DataBaseSettings> settings, IMeterFactory meterFactory, IDistributedCache cache)
-        {
-
-            var mongoClient = new MongoClient(
-            settings.Value.ConnectionString);
+        public TrainingService(
+            IMongoClient mongoClient, 
+            IDataBaseSettings settings,
+            IMeterFactory meterFactory, 
+            IDistributedCache cache)
+            {
 
             var mongoDatabase = mongoClient.GetDatabase(
-                settings.Value.DatabaseName);
+                settings.DatabaseName);
 
             _programs = mongoDatabase.GetCollection<Training>(
-                settings.Value.CollectionNameTraining);
+                settings.CollectionNameTraining);
 
             _coaches = mongoDatabase.GetCollection<Coach>(
-                settings.Value.CollectionNameCoach);
+                settings.CollectionNameCoach);
 
             Type type = typeof(Training);
 
@@ -48,6 +49,10 @@ namespace API_sprot_training_program.Services
             _cache = cache;
 
             Task.Run(() => UpdateCache(CancellationToken.None));
+
+            string list_key = $"training_list";
+            var db_programs = _programs.Find(_ => true).ToList<Training>();
+            _cache.SetString(list_key, JsonSerializer.Serialize(db_programs));
         }
 
         private async Task UpdateCache(CancellationToken stoppingToken)
@@ -79,17 +84,17 @@ namespace API_sprot_training_program.Services
 
         public async Task<List<TrainingOutput>> GetRandomAsync(int count)
         {
-            var pipeline = new EmptyPipelineDefinition<Training>()        
-                .Sample(count);
-            Stopwatch sw = Stopwatch.StartNew();
-            var programsList = _programs.Aggregate(pipeline).ToListAsync();
-            await programsList;
-            sw.Stop();
-            _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
-            return programsList.Result.Select(
+            string list_key = $"training_list";
+            var _random = new Random();
+            List<Training>? cached_trainings = JsonSerializer.Deserialize<List<Training>>(_cache.GetString(list_key));
+
+            return cached_trainings
+            .OrderBy(x => _random.Next()) 
+            .Take(count)
+            .Select(
                 element => MapToOutput(element)
                 )
-                .ToList();
+            .ToList();
         }
 
         public async Task<List<TrainingOutput>> GetOrderAsync()
@@ -119,14 +124,15 @@ namespace API_sprot_training_program.Services
 
         public async Task<TrainingOutput?> GetByIdAsync(String id)
         {
-            string key = $"training_{id}";
-            var cache_element = await _cache.GetAsync(key);
-
-            if (cache_element == null)
-            {
-                return null;
+            string list_key = $"training_list";
+            List<Training>? cached_trainings = JsonSerializer.Deserialize<List<Training>>(_cache.GetString(list_key));
+            foreach (var element in cached_trainings) { 
+                if (id.Equals(element.Id))
+                {
+                    return MapToOutput(element);
+                }
             }
-            return JsonSerializer.Deserialize<TrainingOutput>(cache_element);
+            return null;
         }
 
         public async Task<Training?> CreateAsync(TrainingInput program)
