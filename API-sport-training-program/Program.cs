@@ -15,21 +15,22 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 
-var connection_string_database = Environment.GetEnvironmentVariable("TrainingProgramsDatabase_connectionString");
+var connection_string_database = Environment.GetEnvironmentVariable("db_connection_string");
 builder.Services.AddSingleton<IMongoClient>(new MongoClient(connection_string_database));
 
 builder.Services.AddSingleton<IDataBaseSettings>(
     new TraningsDataBaseSettings(
-         Environment.GetEnvironmentVariable("Collectoin_coaches") ?? "coaches",
-         Environment.GetEnvironmentVariable(" Collection_trainings") ?? "trainings",
-         Environment.GetEnvironmentVariable("DB_name") ?? "db"
+         Environment.GetEnvironmentVariable("redis_connection_string") ?? "coaches",
+         Environment.GetEnvironmentVariable("collectoin_coaches") ?? "trainings",
+         Environment.GetEnvironmentVariable("db_name") ?? "db"
         )
     );
 
-var connection_string_redis = Environment.GetEnvironmentVariable("Redis_connectionString");
+var connection_string_redis = Environment.GetEnvironmentVariable("redis_connection_string") ??
+    "redis:6379,password=password,abortConnect = false";
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = connection_string_redis;
+    options.Configuration = connection_string_redis ;
 
     options.InstanceName = "Api-Sport-Training";
 });
