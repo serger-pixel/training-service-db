@@ -1,12 +1,12 @@
-﻿using API_sprot_training_program.Metrics;
-using API_sprot_training_program.Models;
+﻿using training_service_db.Metrics;
+using training_service_db.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
-namespace API_sprot_training_program.Services
+namespace training_service_db.Services
 {
     public class CoachService
     {
@@ -106,19 +106,32 @@ namespace API_sprot_training_program.Services
             return MapToOutput(element.Result);
         }
 
-        public async Task CreateAsync(CoachInput coach)
+        public async Task<Coach?> CreateAsync(CoachInput coach)
         {
             Stopwatch sw = Stopwatch.StartNew();
-            var result = _coaches.InsertOneAsync(MapToModel(coach));
-            await result;
+            await _coaches.InsertOneAsync(MapToModel(coach));
             sw.Stop();
             _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
+            return MapToModel(coach);
         }
 
         public async Task<ReplaceOneResult> UpdateAsync(String id, CoachInput coach)
         {
             var currentCoach = MapToModel(coach);
             currentCoach.Id = id;
+            Stopwatch sw = Stopwatch.StartNew();
+            var result = _coaches.ReplaceOneAsync(element => element.Id.Equals(id), currentCoach);
+            await result;
+            sw.Stop();
+            _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
+            return result.Result;
+        }
+
+        public async Task<ReplaceOneResult> UpdateAsync(String id, CoachMessageInput coach)
+        {
+            var currentCoach = await _coaches.Find(currentCoach => currentCoach.Id.Equals(id)).FirstOrDefaultAsync();
+            currentCoach.UserId = coach.UserId;
+            currentCoach.TimeConfirm = coach.TimeConfirm;
             Stopwatch sw = Stopwatch.StartNew();
             var result = _coaches.ReplaceOneAsync(element => element.Id.Equals(id), currentCoach);
             await result;
