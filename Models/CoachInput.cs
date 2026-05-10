@@ -2,7 +2,7 @@
 using MongoDB.Bson.Serialization.Attributes;
 using System.ComponentModel.DataAnnotations;
 
-namespace API_sprot_training_program.Models
+namespace training_service_db.Models
 {
     public class CoachInput
     {
@@ -29,8 +29,5 @@ namespace API_sprot_training_program.Models
         public Education SubEducation { get; set; }
 
         public List<TrainingType> Specializations { get; set; }
-
-        public string UserId { get; set; }
-        public string TimeConfirm { get; set; }
     }
 }
