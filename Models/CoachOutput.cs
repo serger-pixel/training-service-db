@@ -1,4 +1,7 @@
-﻿namespace API_sprot_training_program.Models
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace API_sprot_training_program.Models
 {
     public class CoachOutput
     {
@@ -8,7 +11,8 @@
         public string SecondName { get; set; }
         public Education MainEducation { get; set; }
         public Education SubEducation { get; set; }
-
         public List<TrainingType> Specializations { get; set; }
+        public string UserId { get; set; }
+        public DateTime TimeConfirm { get; set; }
     }
 }

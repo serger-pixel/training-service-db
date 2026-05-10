@@ -18,7 +18,6 @@ namespace API_sprot_training_program.Models
         public string SecondName { get; set; }
         public Education MainEducation { get; set; }
         public Education SubEducation { get; set; }
-
         public List<TrainingType> Specializations { get; set; }
     }
 }
