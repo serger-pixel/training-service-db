@@ -1,7 +1,7 @@
 ﻿using FluentAssertions.Equivalency;
 using System.Diagnostics.Metrics;
 
-namespace API_sprot_training_program.Metrics
+namespace training_service_db.Metrics
 {
     public class DataBaseRequestTime
     {

@@ -1,5 +1,5 @@
-using API_sprot_training_program.Models;
-using API_sprot_training_program.Services;
+using training_service_db.Models;
+using training_service_db.Services;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Options;

@@ -1,4 +1,4 @@
-﻿using API_sprot_training_program.Models;
+﻿using training_service_db.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;

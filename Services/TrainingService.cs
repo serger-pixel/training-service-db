@@ -1,5 +1,5 @@
-﻿using API_sprot_training_program.Metrics;
-using API_sprot_training_program.Models;
+﻿using training_service_db.Metrics;
+using training_service_db.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -12,7 +12,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.Json;
 using System.Xml.Linq;
 
-namespace API_sprot_training_program.Services
+namespace training_service_db.Services
 {
     public class TrainingService
     {
