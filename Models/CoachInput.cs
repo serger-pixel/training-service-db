@@ -30,10 +30,7 @@ namespace API_sprot_training_program.Models
 
         public List<TrainingType> Specializations { get; set; }
 
-        [BsonRepresentation(MongoDB.Bson.BsonType.ObjectId)]
         public string UserId { get; set; }
-
-        [BsonRepresentation(BsonType.DateTime)]
-        public DateTime TimeConfirm { get; set; }
+        public string TimeConfirm { get; set; }
     }
 }

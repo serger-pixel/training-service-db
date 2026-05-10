@@ -13,6 +13,6 @@ namespace API_sprot_training_program.Models
         public Education SubEducation { get; set; }
         public List<TrainingType> Specializations { get; set; }
         public string UserId { get; set; }
-        public DateTime TimeConfirm { get; set; }
+        public string TimeConfirm { get; set; }
     }
 }
