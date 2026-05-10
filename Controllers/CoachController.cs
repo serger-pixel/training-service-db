@@ -1,5 +1,6 @@
-﻿using API_sprot_training_program.Models;
-using API_sprot_training_program.Services;
+﻿using training_service_db;
+using training_service_db.Models;
+using training_service_db.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using System.Reflection;
@@ -10,21 +11,29 @@ namespace TrainingcoachApi.Controllers
     [ApiController]
     public class CoachController : ControllerBase
     {
-        CoachService _service;
-        public CoachController(CoachService service)
+        CoachService _coachService;
+
+        BrokerService _brokerService;
+
+        CancellationToken _cancellationToken;
+
+        public CoachController(CoachService coachService, BrokerService brokerService)
         {
-            _service = service;
+            _cancellationToken = new CancellationToken();
+            _coachService = coachService;
+            _brokerService = brokerService;
+            _brokerService.РrocessMessage(_cancellationToken);
         }
 
 
         [HttpGet]
-        public async Task<List<CoachOutput>> Get() => await _service.GetAllAsync();
+        public async Task<List<CoachOutput>> Get() => await _coachService.GetAllAsync();
 
 
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(String id)
         {
-            var coach = await _service.GetByIdAsync(id);
+            var coach = await _coachService.GetByIdAsync(id);
 
             if (coach is null)
             {
@@ -38,7 +47,7 @@ namespace TrainingcoachApi.Controllers
         public async Task<IActionResult> GetByFilter(String nameProperty, String value)
         {
 
-            var coachs = await _service.GetByFilter(nameProperty, value);
+            var coachs = await _coachService.GetByFilter(nameProperty, value);
             if (coachs is null)
             {
                 return NotFound();
@@ -50,7 +59,13 @@ namespace TrainingcoachApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Post(CoachInput coach)
         {
-            await _service.CreateAsync(coach);
+            Coach _coach = await _coachService.CreateAsync(coach);
+            var message = new ProducerMessage
+            {
+                UserId = _coach.UserId,
+                CoachId = _coach.Id
+            };
+            _brokerService.SendMessage(message);
             return CreatedAtAction(nameof(Post), coach);
         }
 
@@ -58,14 +73,14 @@ namespace TrainingcoachApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(String id, CoachInput updatecoach)
         {
-            var currentcoach = await _service.GetByIdAsync(id);
+            var currentcoach = await _coachService.GetByIdAsync(id);
 
             if (currentcoach is null)
             {
                 return NotFound();
             }
 
-            await _service.UpdateAsync(id, updatecoach);
+            await _coachService.UpdateAsync(id, updatecoach);
 
             return NoContent();
         }
@@ -74,7 +89,7 @@ namespace TrainingcoachApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(String id)
         {
-            var result = await _service.DeleteAsync(id);
+            var result = await _coachService.DeleteAsync(id);
 
             if (result.DeletedCount == 0)
             {
@@ -88,7 +103,7 @@ namespace TrainingcoachApi.Controllers
         [HttpDelete("all")]
         public async Task<IActionResult> DeleteAll()
         {
-            await _service.DeleteAllAsync();
+            await _coachService.DeleteAllAsync();
             return NoContent();
         }
     }
