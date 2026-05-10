@@ -1,4 +1,3 @@
 <Solution>
-  <Project Path="API-sprot-training-program-test/API-sprot-training-program-test.csproj" Id="7f7f8949-7eed-4f12-a3e4-59d9cb5cea1e" />
-  <Project Path="API-sprot-training-program/API-sport-training-program.csproj" />
+  <Project Path="API-sport-training-program.csproj" />
 </Solution>
