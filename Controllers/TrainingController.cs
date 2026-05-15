@@ -34,10 +34,10 @@ namespace TrainingProgramApi.Controllers
         }
 
         [HttpGet("filter")]
-        public async Task<IActionResult> GetByFilter(String nameProperty, String value)
+        public async Task<IActionResult> GetByFilter([FromQuery]TrainingsSchemaFilter properties)
         {
      
-            var programs = await _service.GetByFilter(nameProperty, value);
+            var programs = await _service.GetByFilter(properties);
             if (programs is null)
             {
                 return NotFound();
