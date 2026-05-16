@@ -14,7 +14,11 @@ namespace training_service_db.Services
 
         private readonly DataBaseRequestTime _data_base_metric;
 
+        private readonly BrokerService _brokerService;
+
         private const int LIMIT_OF_COACHES = 1000;
+
+        private readonly CancellationToken token = new CancellationToken();
 
         public CoachService(IMongoClient mongoClient,
             IDataBaseSettings settings,
@@ -32,6 +36,10 @@ namespace training_service_db.Services
             Type type = typeof(Coach);
 
             _data_base_metric = new DataBaseRequestTime(meterFactory);
+
+            _brokerService = new BrokerService();
+
+   
         }
 
 
@@ -110,6 +118,12 @@ namespace training_service_db.Services
         {
             Stopwatch sw = Stopwatch.StartNew();
             await _coaches.InsertOneAsync(MapToModel(coach));
+            ProducerMessage message = new ProducerMessage()
+            {
+                CoachId = coach.CoachId,
+                UserId = coach.UserId,
+            };
+            _brokerService.SendMessage(message);
             sw.Stop();
             _data_base_metric.add_value(sw.Elapsed.TotalMilliseconds);
             return MapToModel(coach);
