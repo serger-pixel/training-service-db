@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace API_sprot_training_program.Models
+namespace training_service_db.Models
 {
     public class TrainingsSchemaFilter
     {
