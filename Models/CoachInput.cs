@@ -29,5 +29,9 @@ namespace training_service_db.Models
         public Education SubEducation { get; set; }
 
         public List<TrainingType> Specializations { get; set; }
+
+        public string UserId { get; set; }
+
+        public string CoachId { get; set; }
     }
 }
