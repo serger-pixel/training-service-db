@@ -13,16 +13,9 @@ namespace TrainingcoachApi.Controllers
     {
         CoachService _coachService;
 
-        BrokerService _brokerService;
-
-        CancellationToken _cancellationToken;
-
-        public CoachController(CoachService coachService, BrokerService brokerService)
+        public CoachController(CoachService coachService)
         {
-            _cancellationToken = new CancellationToken();
             _coachService = coachService;
-            _brokerService = brokerService;
-            _brokerService.РrocessMessage(_cancellationToken);
         }
 
 
@@ -60,12 +53,6 @@ namespace TrainingcoachApi.Controllers
         public async Task<IActionResult> Post(CoachInput coach)
         {
             Coach _coach = await _coachService.CreateAsync(coach);
-            var message = new ProducerMessage
-            {
-                UserId = _coach.UserId,
-                CoachId = _coach.Id
-            };
-            _brokerService.SendMessage(message);
             return CreatedAtAction(nameof(Post), coach);
         }
 
